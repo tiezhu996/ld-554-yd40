@@ -8,6 +8,7 @@ BizStarter 面向创业公司与小微企业，覆盖员工管理、排班调度
 - 员工管理：花名册筛选、组织树、入职登记、详情抽屉、转正/调岗/离职入口基础结构。
 - 排班管理：周视图、自动排班、换班申请流程、月度工时统计。
 - 财务管理：收支记录、记账表单、分类统计、利润报表导出。
+- 工资单：按门店和月份一键生成/重算工资单，自动汇总为一笔工资支出，支持明细查看。
 - 门店管理：卡片/表格视图、业绩对比、人员配置、门店详情。
 - 横切能力：JWT 认证、RBAC、按钮权限、数据范围过滤、统一异常处理、操作审计。
 
@@ -69,6 +70,7 @@ npm run dev
 | BACKEND_PORT | 后端暴露端口 | 38504 |
 | DB_HOST | 数据库主机 | mysql |
 | DB_PORT | MySQL 宿主机端口 | 33064 |
+| DB_DIALECT | Sequelize 方言（测试可设为 sqlite 并配合 DB_STORAGE） | mysql |
 | DB_NAME | 数据库名 | bizstarter |
 | DB_USER | 数据库用户 | bizstarter |
 | DB_PASSWORD | 数据库密码 | bizstarter_pass |
@@ -102,9 +104,23 @@ database/   init.sql 和 seed.sql
 
 后端通过 `backend/src/middlewares/error-handler.middleware.ts` 捕获未处理异常，统一返回 `{ code, message, data }`，生产环境隐藏堆栈。前端通过 `frontend/src/utils/request.ts` 的 Axios 响应拦截器统一处理 401、403、500，并使用 Element Plus `ElMessage` 提示。
 
+## 工资单说明
+
+后端 `POST /api/payrolls/generate`（入参 `storeId`、`month`，格式 `YYYY-MM`）按门店和月份生成工资单，`GET /api/payrolls`、`GET /api/payrolls/:id` 查询列表与明细。
+
+**计薪规则**：
+- 计薪对象为该门店在职员工（试用 + 正式，不含离职）。
+- 应付金额 = 月薪 ÷ 当月自然天数 × 当月已确认班次数（状态为已确认/已打卡，休息班不计入），按分计算避免浮点误差。
+- 班次未确认的员工当月不计入；确认后再次生成会补入该员工并修正总额，已计薪员工只更新不重复。
+
+**幂等与并发**：
+- `payrolls` 表对 `(store_id, month)` 建唯一索引，同一门店同一月份只存在一条工资单；并发生成时撞唯一键后转为加行锁更新，重复点击或多人同时点击总额不会翻倍。
+- 每次生成在数据库事务内按最新已确认班次整体重算明细（`payroll_items` 对 `(payroll_id, employee_id)` 唯一），新确认的员工补入、已算员工更新金额、不再符合条件的明细移除。
+- 每张工资单关联且仅关联一笔 `SALARY` 类支出流水（`payrolls.transaction_id`），重复生成只同步该流水的金额与日期（月末日），不会重复记账。
+
 ## 操作日志说明
 
-后端 `audit.middleware.ts` 会审计财务新增/修改/删除、员工新增/修改/删除、排班创建/自动排班/修改、门店新增/修改/删除等关键操作，记录到 `audit_logs` 表，字段包含 `operatorId`、`action`、`target`、`oldValue`、`newValue`、`ip`、`timestamp`。
+后端 `audit.middleware.ts` 会审计财务新增/修改/删除、工资单生成、员工新增/修改/删除、排班创建/自动排班/修改、门店新增/修改/删除等关键操作，记录到 `audit_logs` 表，字段包含 `operatorId`、`action`、`target`、`oldValue`、`newValue`、`ip`、`timestamp`。
 
 ## RBAC 权限矩阵
 
@@ -114,6 +130,7 @@ database/   init.sql 和 seed.sql
 | 员工 | 增删改查 | 新增/查看/修改门店范围 | 查看本人/门店范围 |
 | 排班 | 增删改查/自动排班 | 新增/查看/修改门店范围 | 查看个人排班 |
 | 财务 | 增删改查/审核 | 新增/查看门店范围 | 无 |
+| 工资单 | 生成/查看 | 生成/查看本门店 | 无 |
 | 门店 | 增删改查 | 查看/修改负责门店 | 无 |
 | 系统设置 | 全部 | 无 | 无 |
 

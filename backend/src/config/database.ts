@@ -1,4 +1,4 @@
-import { Sequelize } from 'sequelize';
+import { Sequelize, type Dialect } from 'sequelize';
 
 export const sequelize = new Sequelize(
   process.env.DB_NAME ?? 'bizstarter',
@@ -7,7 +7,8 @@ export const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST ?? 'localhost',
     port: Number(process.env.DB_PORT ?? 3306),
-    dialect: 'mysql',
+    dialect: (process.env.DB_DIALECT ?? 'mysql') as Dialect,
+    storage: process.env.DB_STORAGE,
     logging: false,
     define: {
       underscored: true,
