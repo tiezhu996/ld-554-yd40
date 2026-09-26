@@ -25,6 +25,7 @@
         </el-table>
       </div>
       <div class="panel"><FinanceChart type="pie" title="分类统计" :labels="categoryLabels" :values="categoryValues" /></div>
+      <div class="panel"><h3>门店工资单</h3><PayrollPanel /></div>
       <div class="panel"><FinanceReport /></div>
     </div>
     <el-drawer v-model="formVisible" title="记账表单"><FinanceForm @submit="save" /></el-drawer>
@@ -39,6 +40,7 @@ import StoreSelector from '@/components/common/StoreSelector.vue';
 import FinanceChart from '@/components/common/FinanceChart.vue';
 import FinanceForm from './FinanceForm.vue';
 import FinanceReport from './FinanceReport.vue';
+import PayrollPanel from './PayrollPanel.vue';
 import { TransactionCategoryLabel, TransactionTypeLabel } from '@/constants/enums';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { createTransaction } from '@/api/transaction';

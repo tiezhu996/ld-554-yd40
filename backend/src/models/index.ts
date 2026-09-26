@@ -2,6 +2,8 @@ import { Employee } from './employee.model.js';
 import { Store } from './store.model.js';
 import { Shift } from './shift.model.js';
 import { Transaction } from './transaction.model.js';
+import { Payroll } from './payroll.model.js';
+import { PayrollItem } from './payroll-item.model.js';
 import { User } from './user.model.js';
 import { AuditLog } from './audit-log.model.js';
 
@@ -25,4 +27,12 @@ User.belongsTo(Employee, { foreignKey: 'employeeId' });
 User.belongsTo(Store, { foreignKey: 'storeId' });
 AuditLog.belongsTo(User, { foreignKey: 'operatorId' });
 
-export { Employee, Store, Shift, Transaction, User, AuditLog };
+Store.hasMany(Payroll, { foreignKey: 'storeId' });
+Payroll.belongsTo(Store, { foreignKey: 'storeId' });
+Payroll.belongsTo(Transaction, { foreignKey: 'transactionId' });
+Payroll.hasMany(PayrollItem, { as: 'items', foreignKey: 'payrollId' });
+PayrollItem.belongsTo(Payroll, { foreignKey: 'payrollId' });
+Employee.hasMany(PayrollItem, { foreignKey: 'employeeId' });
+PayrollItem.belongsTo(Employee, { foreignKey: 'employeeId' });
+
+export { Employee, Store, Shift, Transaction, Payroll, PayrollItem, User, AuditLog };

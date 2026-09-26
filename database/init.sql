@@ -85,6 +85,35 @@ CREATE TABLE IF NOT EXISTS transactions (
   CONSTRAINT fk_transaction_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS payrolls (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  store_id INT NOT NULL,
+  month CHAR(7) NOT NULL COMMENT '工资月份，格式 YYYY-MM',
+  total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  employee_count INT NOT NULL DEFAULT 0,
+  transaction_id INT NULL COMMENT '关联的工资支出流水，整月只有一笔',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_payroll_store_month (store_id, month),
+  CONSTRAINT fk_payroll_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
+  CONSTRAINT fk_payroll_transaction FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS payroll_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  payroll_id INT NOT NULL,
+  employee_id INT NOT NULL,
+  employee_name VARCHAR(60) NOT NULL COMMENT '员工姓名快照',
+  monthly_salary DECIMAL(12,2) NOT NULL COMMENT '计薪时月薪快照',
+  confirmed_days INT NOT NULL COMMENT '当月已确认出勤天数',
+  amount DECIMAL(12,2) NOT NULL COMMENT '应付金额',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_payroll_item_employee (payroll_id, employee_id),
+  CONSTRAINT fk_payroll_item_payroll FOREIGN KEY (payroll_id) REFERENCES payrolls(id) ON DELETE CASCADE,
+  CONSTRAINT fk_payroll_item_employee FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   operator_id INT NULL,

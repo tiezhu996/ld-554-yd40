@@ -7,6 +7,7 @@ import { employeeRoutes } from './routes/employee.routes.js';
 import { shiftRoutes } from './routes/shift.routes.js';
 import { storeRoutes } from './routes/store.routes.js';
 import { transactionRoutes } from './routes/transaction.routes.js';
+import { payrollRoutes } from './routes/payroll.routes.js';
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import { errorHandler } from './middlewares/error-handler.middleware.js';
 
@@ -21,5 +22,6 @@ app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/employees', authMiddleware, employeeRoutes);
 app.use('/api/shifts', authMiddleware, shiftRoutes);
 app.use('/api/transactions', authMiddleware, transactionRoutes);
+app.use('/api/payrolls', authMiddleware, payrollRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
 app.use(errorHandler);
